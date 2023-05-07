@@ -26,21 +26,21 @@ const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is '
 // Text To Speech
 const say = require('say');
 let voicesList = [];
-say.speak("Initializing", null, 2.0, (err) => { if (err) { return console.error(err) } });
+// say.speak("Initializing", null, 2.0, (err) => { if (err) { return console.error(err) } });
 function getVoices() { return new Promise((resolve) => { say.getInstalledVoices((err, voice) => { if (err) { console.error(err); } return resolve(voice); }) }) }
 async function usingVoices() { voicesList = await getVoices(); console.log(voicesList) }
 
 // Queue's and busy booleans for all different parts
 let tasksBusy  = { speaking: false, thinking: false, listening: false, console: false };
 let tasksQueue = { speaking: []   , thinking: []   , listening: []   , console: []    };
+let program = null;
 
 ////////////////////////
 // Streamer companion //
 ////////////////////////
 
 // TODO  list:
-/* Setup console
- * Setup knowledge database system
+/* Setup knowledge database system
  * Setup filters for output
  * Add voice recognition
  */
@@ -60,11 +60,10 @@ function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy
 
 async function start() {
    await init(); // Make sure the modules are initialized correctly
-   while (isBusy()) {} // Loop until finished
+   while (isBusy()) { await sleep(2); } // Loop until finished
 
    // Make sure the modules are closed correctly
    chat.close();
-   stopServer();
 }
 
 function parseCommand(cmd) {
@@ -73,11 +72,14 @@ function parseCommand(cmd) {
    console.log(params);
    if (equalsCaseSensitive(params[0], "cmd")) {
       switch (params[1]) {
-         case "say": {
-
-         }
+         case "say":
+            speak(concatenate(params, 2));
+            break;
          case "start":
-            start().catch((err) => { console.error(err); });
+            if (program === null) { program = start(); }
+            break;
+         case "stop":
+            stopServer();
             break;
          default:
             break;
@@ -164,4 +166,11 @@ function equalsCaseSensitive(first, second) {
    console.log(first + "?" + second);
    for (let i = 0; i < first.length; i++) { if (first[i] !== second[i]) { console.log(first[i] + "?" + second[i]); return false; } }
    return true;
+}
+
+function concatenate(list, start = 0, end = 0) {
+   if (end === 0) { end = list.length; } else if (list.length) { end = Math.min(end + 1, list.length); } // Make sure it doesn't go out of the arrays bounds
+   let result = "";
+   for (let i = start; i < end; i++) { result += (i !== start ? " " : "") + list[i]; }
+   return result;
 }
