@@ -25,14 +25,21 @@ html {
     align-content: center;
 }
 
-#button {
+button {
     padding: 5px;
     margin: 40px;
     background-image: linear-gradient(to top, var(--button) 5%, var(--main) 40%, var(--main) 60%, var(--button) 95%);
     border: 3px var(--main) solid;
     border-radius: 10px;
+    color: var(--text);
 }
 
-#button:hover {
+button:hover {
     background-image: linear-gradient(to top, var(--main) 5%, var(--button) 40%, var(--button) 60%, var(--main) 95%);
+    color: var(--text);
+}
+
+#text-input {
+    background: var(--text);
+    color: var(--main);
 }

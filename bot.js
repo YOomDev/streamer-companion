@@ -7,7 +7,17 @@
 // Settings //
 //////////////
 
-const filter = false;
+const filter = false; // Turns the response speech filter on or off
+
+// Priority types for usage when you connect it to a chat with viewers or some other chat sort
+const PRIO_DEV = "dev";
+const PRIO_CHAT = "chat";
+
+// Priorities for prompt ordering
+const PRIORITIES = [
+   PRIO_DEV,
+   PRIO_CHAT,
+];
 
 ////////////////////////////////
 // Memory for running the bot //
@@ -19,7 +29,7 @@ const app = express();
 
 // GPT4All
 // Note that the gpt4all we are using has problems by default on windows, instructions for fix below:
-// line 65: make sure there is a .exe extension like this -> "/.nomic/gpt4all.exe", this is only needed for Windows users
+// line 65: make sure there is a .exe extension like this -> "/.nomic/gpt4all.exe", this is only needed for some Windows users
 const GPT = require('gpt4all').GPT4All;
 const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is 'gpt4all-lora-quantized' model
 
@@ -64,6 +74,7 @@ async function start() {
 
    // Make sure the modules are closed correctly
    chat.close();
+   program = null;
 }
 
 function parseCommand(cmd) {
@@ -114,8 +125,62 @@ function speakQueue() {
 // GPT //
 /////////
 
-// tasksBusy.thinking = true;
-// TODO: implement
+const allowedCharacters = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz.,:;[]!?(){}=-+<>*%^&$#@!|`\'\"/\\ 0123456789";
+const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+function ask(author, prompt, spoken = true) {
+   tasksQueue.thinking.push( { author: author, prompt: prompt, spoken: spoken} );
+   if (!tasksBusy.thinking) { askQueue().then(() => {}); }
+   console.log("added question");
+}
+
+async function askQueue() {
+   let current = 0;
+   while(tasksQueue.thinking.length > 0) {
+      tasksBusy.thinking = true;
+      current = getHighestQueueByPriority();
+      await chatPrompt(tasksQueue.thinking[current].prompt, tasksQueue.thinking[current].spoken);
+      tasksQueue.thinking.splice(current, 1);
+   }
+   tasksBusy.thinking = false;
+}
+
+async function chatPrompt(prompt, spoken) {
+   console.log(`Prompt: ${prompt}`);
+   console.time('response');
+   const response = await chat.prompt(prompt);
+   console.timeEnd('response');
+   const result = cleanResponse(response);
+   if (spoken) { speak(filterResponse(result)); }
+   console.log(`Response: ${result}`);
+}
+
+function getHighestQueueByPriority() {
+   let topPrio = 1000000000;
+   let top = 0;
+   for (let i = 0; i < tasksQueue.thinking.length; i++) {
+      const prio = PRIORITIES.indexOf(tasksQueue.thinking[i].author);
+      if (prio === 0) { return i; }
+      if (prio < topPrio) {
+         topPrio = prio;
+         top = i;
+      }
+   }
+   return top;
+}
+
+function filterResponse(response) {
+   if (filter) {
+      // TODO
+   }
+   return response;
+}
+
+function cleanResponse(response) {
+   let result = "";
+   for (let i = 0; i < response.length; i++) { if (allowedCharacters.indexOf(response[i]) >= 0) { result += response[i]; } }
+   return result.substring(findFirstCapitalCharacter(result), result.length - 1);
+}
 
 ///////////////////////
 // Voice recognition //
@@ -129,7 +194,6 @@ function speakQueue() {
 ////////////////////////
 
 // TODO: implement
-
 // info:
 /* can load modules and keep the names and index pages in memory
  * loads only the needed memory parts of the modules when requested and doesn't keep them in memory
@@ -162,10 +226,10 @@ function stopServer() { tasksBusy.server = false; }
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
 
 function equalsCaseSensitive(first, second) {
-   if (first.length !== second.length) { return false; }
-   console.log(first + "?" + second);
-   for (let i = 0; i < first.length; i++) { if (first[i] !== second[i]) { console.log(first[i] + "?" + second[i]); return false; } }
-   return true;
+   switch(first) {
+      case second: return true;
+      default: return false;
+   }
 }
 
 function concatenate(list, start = 0, end = 0) {
@@ -174,3 +238,7 @@ function concatenate(list, start = 0, end = 0) {
    for (let i = start; i < end; i++) { result += (i !== start ? " " : "") + list[i]; }
    return result;
 }
+
+function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
+
+function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }

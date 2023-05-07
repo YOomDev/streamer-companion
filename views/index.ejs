@@ -10,8 +10,21 @@
         <div id="container">
             <h1>Test</h1>
             <p>123</p>
-            <a id="button">test29812635</a>
+            <div id="text-input" role="textbox" contenteditable="true" aria-multiline="true"></div>
+            <button onclick="say()" type="button">Say</button>
+            <button onclick="location.href=location.href+'cmd/start'" type="button">Start</button>
         </div>
         <div id="footer"></div>
+        <script>
+            function say() {
+                const text = document.getElementById("text-input").innerHTML;
+                let result = "";
+                for (let i = 0; i < text.length; i++) {
+                    if (result.length) { result += text[i] === " " ? "\/" : text[i]; }
+                    else if (text[i] !== " ") { result += text[i]; }
+                }
+                location.href = location.href + "cmd/say/" + result;
+            }
+        </script>
     </body>
 </html>
