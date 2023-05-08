@@ -156,7 +156,9 @@ async function chatPrompt(prompt, spoken) {
    console.time('response');
    const response = await chat.prompt(prompt);
    console.timeEnd('response');
+   console.log(response);
    const result = cleanResponse(response);
+   console.log(result);
    if (spoken) { speak(filterResponse(result)); }
    console.log(`Response: ${result}`);
 }
@@ -182,7 +184,7 @@ function filterResponse(response) { return (filter && containsFromList(response,
 function cleanResponse(response) {
    let result = "";
    for (let i = 0; i < response.length; i++) { if (allowedCharacters.indexOf(response[i]) >= 0) { result += response[i]; } }
-   return result.substring(findFirstCapitalCharacter(result), result.length - 1);
+   return result.substring(findFirstCapitalCharacter(result), result.length);
 }
 
 ///////////////////////
