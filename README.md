@@ -17,8 +17,8 @@ The project was inspired by the streamer bots that can play games or answer chat
 2. (❌) Testing and improving parts that might need it<br/>
 -&ensp;(❌) Add more knowledge on a subject to test the summarizing or answering abilities of the AI and so that people can actually start using it<br/>
 -&ensp;(❌) Create a better TTS implementation, possibly using a different api/library<br/>
-3. (❌) Make the project easier for others to use
+3. (❌) Make the project easier for others to use<br/>
    -&ensp;(❌) Make the console UI look better<br/>
-4. (❌) Start extending the knowledge database of the AI
+4. (❌) Start extending the knowledge database of the AI<br/>
 -&ensp;(❌) Complete the AI's knowledge on subjects<br/>
 -&ensp;(❌) Add more subjects over time<br/>
