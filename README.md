@@ -7,8 +7,8 @@ The bot itself is based on GPT4All which by itself doesn't know anything, in thi
 ### Inspiration
 The project was inspired by the streamer bots that can play games or answer chat messages.
 
-## Status: (prototyping)
-###   Roadmap
+# Status: (prototyping)
+##   Roadmap
 1. (🚧) Creating the first prototype:<br/>
 -&ensp;(✔️) Creating a console for sending testing commands and prompts for the AI and the program<br/> 
 -&ensp;(✔️) Basic implementation for interacting with the AI<br/>
@@ -21,4 +21,25 @@ The project was inspired by the streamer bots that can play games or answer chat
    -&ensp;(❌) Make the console UI look better<br/>
 4. (❌) Start extending the knowledge database of the AI<br/>
 -&ensp;(❌) Complete the AI's knowledge on subjects<br/>
--&ensp;(❌) Add more subjects over time<br/>
+-&ensp;(❌) Add more subjects over time
+
+# How to use
+## Dev's setup
+### Tools
+ - Node.js
+ - Git (optional)
+ - Terminal (e.g. PowerShell, Command prompt)
+
+### Installation
+1. Make sure Node.js is installed
+2. Download the project and extract to the folder you want to use it in
+3. open a terminal in the folders location
+4. > node .
+   
+### Updating using git
+#### Setup
+Explanation coming at a later date since I still have to figure this out myself...
+
+#### Updating
+Open a terminal in the folders location
+ > git pull
