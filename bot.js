@@ -78,13 +78,13 @@ async function start() {
    await init(); // Make sure the modules are initialized correctly
    while (isBusy()) { await sleep(1); } // Loop until finished
 
+   console.log("AI shutting down...");
    // Make sure the modules are closed correctly
    chat.close();
    program = null;
 }
 
-function parseCommand(cmd) {
-   console.log(cmd);
+async function parseCommand(cmd) {
    const params = cmd.substring(1,cmd.length).split("\/");
    console.log(params);
    if (equalsCaseSensitive(params[0], "cmd")) {
@@ -99,7 +99,7 @@ function parseCommand(cmd) {
             if (program === null) { program = start(); }
             break;
          case "stop":
-            stopServer();
+            await stopServer();
             break;
          default:
             break;
@@ -216,8 +216,7 @@ app.use(express.static(__dirname + '/public'));
 // Set command interface through page get
 app.get("/cmd/*", (req, res) => {
    res.redirect("/"); // redirects back to the home page
-   console.log(tasksBusy.console);
-   parseCommand(req.url);
+   parseCommand(req.url).catch((err) => { console.error(err); });
 });
 
 // Set main page get implementation
@@ -228,7 +227,7 @@ const server = http.createServer(app);
 server.listen(3000, () => { tasksBusy.console = true; });
 
 // Used to kill the server
-function stopServer() { tasksBusy.console = false; server.close(); }
+async function stopServer() { server.close((err) => { console.error(err); }); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
 
 ///////////
 // Utils //
