@@ -4,7 +4,6 @@
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "bot": "nodemon bot.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,7 +14,6 @@
     "express": "^4.18.2",
     "gpt4all": "^1.0.0",
     "http": "^0.0.1-security",
-    "nodemon": "^2.0.22",
     "say": "^0.16.0"
   }
 }
