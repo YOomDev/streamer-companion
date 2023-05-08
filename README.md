@@ -36,7 +36,7 @@ The project was inspired by the streamer bots that can play games or answer chat
 3. Open a terminal in the folders location and use the following command:
 > node .
    
-### Updating using git
+### Using git
 #### Setup
 Open a terminal in the folders location and use the following command:
 > git clone https://github.com/YOomDev/streamer-companion
