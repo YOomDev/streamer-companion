@@ -15,5 +15,10 @@ The project was inspired by the streamer bots that can play games or answer chat
 -&ensp;(✔️) Temporary TTS for output without having to read<br/>
 -&ensp;(🚧)Creating a prototype for the knowledge database system<br/><br/>
 2. (❌) Testing and improving parts that might need it<br/>
--&ensp;(❌) Temporary TTS for output without having to read<br/>
-3. 
+-&ensp;(❌) Add more knowledge on a subject to test the summarizing or answering abilities of the AI and so that people can actually start using it<br/>
+-&ensp;(❌) Create a better TTS implementation, possibly using a different api/library<br/>
+3. (❌) Make the project easier for others to use
+   -&ensp;(❌) Make the console UI look better<br/>
+4. (❌) Start extending the knowledge database of the AI
+-&ensp;(❌) Complete the AI's knowledge on subjects<br/>
+-&ensp;(❌) Add more subjects over time<br/>
