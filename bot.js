@@ -1,6 +1,5 @@
 // Project info:
-/* .
- * .
+/*
  */
 
 //////////////
@@ -19,11 +18,18 @@ const PRIORITIES = [
    PRIO_CHAT,
 ];
 
+// Filtering
+const filteredMessage = "*Filtered*";
+const FILTERED = [
+    "test",
+];
+
 ////////////////////////////////
 // Memory for running the bot //
 ////////////////////////////////
 
 // Console
+const http = require('http');
 const express = require('express');
 const app = express();
 
@@ -51,7 +57,6 @@ let program = null;
 
 // TODO  list:
 /* Setup knowledge database system
- * Setup filters for output
  * Add voice recognition
  */
 
@@ -66,6 +71,7 @@ async function init() {
    console.log("Initialized!");
 }
 
+// Used to check if the AI interface and speaking interface are meant to be kept alive
 function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy.listening || tasksBusy.server; }
 
 async function start() {
@@ -83,6 +89,9 @@ function parseCommand(cmd) {
    console.log(params);
    if (equalsCaseSensitive(params[0], "cmd")) {
       switch (params[1]) {
+         case "ask":
+            ask(PRIO_DEV, concatenate(params, 2));
+            break;
          case "say":
             speak(concatenate(params, 2));
             break;
@@ -101,9 +110,6 @@ function parseCommand(cmd) {
 ////////////////////
 // Text To Speech //
 ////////////////////
-
-// tasksBusy.speaking = true;
-// TODO: implement
 
 function speak(message) {
    tasksQueue.speaking.push(message);
@@ -169,13 +175,10 @@ function getHighestQueueByPriority() {
    return top;
 }
 
-function filterResponse(response) {
-   if (filter) {
-      // TODO
-   }
-   return response;
-}
+// Used to filter the responses if the setting is turned on so that it can be used in situations where the AI is not allowed to say certain things
+function filterResponse(response) { return (filter && containsFromList(response, FILTERED, true)) ? filteredMessage : response; }
 
+// Used to clean the response from gpt4all since it usually includes some gibberish from piping the text to this application
 function cleanResponse(response) {
    let result = "";
    for (let i = 0; i < response.length; i++) { if (allowedCharacters.indexOf(response[i]) >= 0) { result += response[i]; } }
@@ -204,20 +207,26 @@ function cleanResponse(response) {
 // Control panel //
 ///////////////////
 
+// Setup express for usage
 app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 
+// Set command interface through page get
 app.get("/cmd/*", (req, res) => {
    res.redirect("/"); // redirects back to the home page
    console.log(tasksBusy.console);
    parseCommand(req.url);
 });
 
+// Set main page get implementation
 app.get("/", (req, res) => { res.render("index"); tasksBusy.console = true; }); // Renders the bots console to the user
 
-app.listen(3000, () => { tasksBusy.server = true; });
+// Start the server
+const server = http.createServer(app);
+server.listen(3000, () => { tasksBusy.server = true; });
 
-function stopServer() { tasksBusy.server = false; }
+// Used to kill the server
+function stopServer() { tasksBusy.server = false; server.close(); }
 
 ///////////
 // Utils //
@@ -242,3 +251,11 @@ function concatenate(list, start = 0, end = 0) {
 function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
 
 function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }
+
+function containsFromList(txt, list, ignoreCase = false) {
+   for (let i = 0; i < list.length; i++) {
+      if (txt.indexOf(list[i])) { return true; }
+      else if (ignoreCase) { if (txt.toLowerCase().indexOf(list[i].toLowerCase())) { return true; } }
+   }
+   return false;
+}

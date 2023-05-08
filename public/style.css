@@ -39,7 +39,7 @@ button:hover {
     color: var(--text);
 }
 
-#text-input {
+.text-input {
     background: var(--text);
     color: var(--main);
 }
