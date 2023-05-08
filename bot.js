@@ -72,7 +72,7 @@ async function init() {
 }
 
 // Used to check if the AI interface and speaking interface are meant to be kept alive
-function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy.listening || tasksBusy.server; }
+function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy.listening || tasksBusy.console; }
 
 async function start() {
    await init(); // Make sure the modules are initialized correctly
@@ -221,14 +221,14 @@ app.get("/cmd/*", (req, res) => {
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => { res.render("index"); tasksBusy.console = true; }); // Renders the bots console to the user
+app.get("/", (req, res) => { res.render("index"); }); // Renders the bots console to the user
 
 // Start the server
 const server = http.createServer(app);
-server.listen(3000, () => { tasksBusy.server = true; });
+server.listen(3000, () => { tasksBusy.console = true; });
 
 // Used to kill the server
-function stopServer() { tasksBusy.server = false; server.close(); }
+function stopServer() { tasksBusy.console = false; server.close(); }
 
 ///////////
 // Utils //
