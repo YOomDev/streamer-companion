@@ -10,7 +10,7 @@
         <div id="container">
             <h1>Test</h1>
             <p>123</p>
-            <div class="text-input" id="say-input" role="textbox" contenteditable="true" aria-multiline="true"></div>
+            <div class="text-input" id="say-input" role="textbox" contenteditable="true" aria-multiline="true" aria-placeholder="Test"></div>
             <button onclick="command('say', 'say-input')" type="button">Say</button>
             <div class="text-input" id="prompt-input" role="textbox" contenteditable="true" aria-multiline="true"></div>
             <button onclick="command('ask', 'prompt-input')" type="button">Ask</button>
@@ -20,7 +20,8 @@
         <div id="footer"></div>
         <script>
             function command(cmd, source, separator = "\/") {
-                const text = document.getElementById(source).innerHTML;
+                let text = document.getElementById(source).innerHTML.replaceAll("<div>", " ").replaceAll("<br>", "").replaceAll("</div>", "");
+                while(text.indexOf("  ") > -1) { text = text.replaceAll("  ", " "); }
                 let result = "";
                 for (let i = 0; i < text.length; i++) {
                     if (result.length) { result += text[i] === " " ? separator : text[i]; }

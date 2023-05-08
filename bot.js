@@ -76,7 +76,7 @@ function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy
 
 async function start() {
    await init(); // Make sure the modules are initialized correctly
-   while (isBusy()) { await sleep(2); } // Loop until finished
+   while (isBusy()) { await sleep(1); } // Loop until finished
 
    // Make sure the modules are closed correctly
    chat.close();
