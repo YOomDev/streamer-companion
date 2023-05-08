@@ -42,7 +42,6 @@ const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is '
 // Text To Speech
 const say = require('say');
 let voicesList = [];
-// say.speak("Initializing", null, 2.0, (err) => { if (err) { return console.error(err) } });
 function getVoices() { return new Promise((resolve) => { say.getInstalledVoices((err, voice) => { if (err) { console.error(err); } return resolve(voice); }) }) }
 async function usingVoices() { voicesList = await getVoices(); console.log(voicesList) }
 
