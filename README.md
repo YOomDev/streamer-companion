@@ -44,3 +44,6 @@ Open a terminal in the folders location and use the following command:
 #### Updating
 Open a terminal in the folders location and use the following command:
 > git pull
+
+# Legal notice
+streamer-companion is a GPLv3 program, which allows for free redistribution of its source code.
