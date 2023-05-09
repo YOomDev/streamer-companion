@@ -26,6 +26,7 @@ html {
 }
 
 button {
+    display: inline-block;
     padding: 5px;
     margin: 40px;
     background-image: linear-gradient(to top, var(--button) 5%, var(--main) 40%, var(--main) 60%, var(--button) 95%);
@@ -40,8 +41,10 @@ button:hover {
 }
 
 .text-input {
+    display: inline-block;
     background: var(--text);
     border: 3px var(--button) solid;
     border-radius: 7px;
     color: var(--main);
+    min-width: 20%;
 }
