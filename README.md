@@ -30,15 +30,16 @@ The project was inspired by the streamer bots that can play games or answer chat
  - Git (optional)
  - Terminal (e.g. PowerShell, Command prompt)
 
-### Using the project without git
+### Using the project without Git
 1. Make sure Node.js is installed
 2. Download the project and extract to the folder you want to use it in
 3. Open a terminal in the folders location and use the following command:
 > node .
    
-### Using git
+### Using Git
 #### Setup
-Open a terminal in the folders location and use the following command:
+ - Make sure Node.js is installed
+ - Open a terminal in the folders location and use the following command:
 > git clone https://github.com/YOomDev/streamer-companion
 
 #### Updating
