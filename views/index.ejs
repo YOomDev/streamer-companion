@@ -14,20 +14,42 @@
             <button onclick="command('say', 'say-input')" type="button">Say</button><br/>
             <div class="text-input" id="prompt-input" role="textbox" contenteditable="true" aria-multiline="true"></div>
             <button onclick="command('ask', 'prompt-input')" type="button">Ask</button><br/>
-            <button onclick="location.href=location.href+'cmd/start'" type="button">Start</button>
-            <button onclick="location.href=location.href+'cmd/stop'" type="button">Stop</button>
+            <form>
+                <%-modules%>
+                <button onclick="prepareModules(); command('modules', 'modules')" type="button">Test</button>
+            </form>
+            <p id="modules" hidden></p>
+            <button onclick="command('start')" type="button">Start</button>
+            <button onclick="command('stop')" type="button">Stop</button>
         </div>
+
         <div id="footer"></div>
         <script>
-            function command(cmd, source, separator = "\/") {
-                let text = document.getElementById(source).innerHTML.replaceAll("<div>", " ").replaceAll("<br>", "").replaceAll("</div>", "");
-                while(text.indexOf("  ") > -1) { text = text.replaceAll("  ", " "); }
-                let result = "";
-                for (let i = 0; i < text.length; i++) {
-                    if (result.length) { result += text[i] === " " ? separator : text[i]; }
-                    else if (text[i] !== " ") { result += text[i]; }
+            function command(cmd, source = "", separator = "\/") {
+                let result = "cmd/" + cmd + "/";
+                if (source.length) { // Branch off if a data input has been added
+                    let text = document.getElementById(source).innerHTML.replaceAll("<div>", " ").replaceAll("<br>", "").replaceAll("</div>", "");
+                    while(text.indexOf("  ") > -1) { text = text.replaceAll("  ", " "); }
+                    for (let i = 0; i < text.length; i++) {
+                        if (result.length) { result += text[i] === " " ? separator : text[i]; }
+                        else if (text[i] !== " ") { result += text[i]; }
+                    }
                 }
-                location.href = location.href + "cmd/" + cmd + "/" + result;
+                location.href = location.href + result;
+            }
+
+            function prepareModules() {
+                const boxes = document.getElementsByName("module");
+                let list = [];
+                boxes.forEach((e) => { if (e.checked) { list.push(e.value); } });
+                document.getElementById("modules").innerHTML = concat(list);
+                return false;
+            }
+
+            function concat(list) {
+                let result = "";
+                for (let i = 0; i < list.length; i ++) { result += ((!result.length || !(list[i].length)) ? "" : " ") + list[i]; }
+                return result;
             }
         </script>
     </body>

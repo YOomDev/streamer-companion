@@ -32,6 +32,7 @@ const FILTERED = [
 const http = require('http');
 const express = require('express');
 const app = express();
+let knowledge_modules = [];
 
 // GPT4All
 // Note that the gpt4all we are using has problems by default on windows, instructions for fix below:
@@ -53,11 +54,6 @@ let program = null;
 ////////////////////////
 // Streamer companion //
 ////////////////////////
-
-// TODO  list:
-/* Setup knowledge database system
- * Add voice recognition
- */
 
 async function init() {
    console.log("Initializing...");
@@ -93,6 +89,11 @@ async function parseCommand(cmd) {
             break;
          case "say":
             speak(concatenate(params, 2));
+            break;
+         case "modules":
+            const tmp = subList(params, 2);
+            findModules();
+            for (let i = 0; i < knowledge_modules.length; i++) { knowledge_modules[i].active = contains(tmp, knowledge_modules[i].name); }
             break;
          case "start":
             if (program === null) { program = start(); }
@@ -204,6 +205,35 @@ function cleanResponse(response) {
  * needs to be able to get knowledge from parent items, like when thinking of planks it needs to know things about logs and trees and such
  */
 
+function findModules() {
+   let list = [];
+
+   addModuleToList("test1", list);
+   addModuleToList("test2", list);
+   addModuleToList("test3", list);
+   addModuleToList("test4", list);
+   // TODO
+
+   // Overwrite the current list
+   knowledge_modules = list;
+   loadModules();
+}
+
+function addModuleToList(name, list, checked = false) { list.push({ name: name, active: checked ? checked : wasChecked(name) }); }
+
+function wasChecked(name) {
+   for (let i = 0; i < knowledge_modules.length; i++) {
+      if (equalsCaseSensitive(knowledge_modules[i].name, name)) {
+         if (knowledge_modules[i].active) { return true; }
+      }
+   }
+   return false;
+}
+
+function loadModules() {
+   // TODO
+}
+
 ///////////////////
 // Control panel //
 ///////////////////
@@ -219,7 +249,7 @@ app.get("/cmd/*", (req, res) => {
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => { res.render("index"); }); // Renders the bots console to the user
+app.get("/", (req, res) => { res.render("index", { modules: generateModulesHTML() }); });
 
 // Start the server
 const server = http.createServer(app);
@@ -228,11 +258,29 @@ server.listen(3000, () => { tasksBusy.console = true; });
 // Used to kill the server
 async function stopServer() { server.close((err) => { console.error(err); }); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
 
+function generateModulesHTML() {
+   findModules();
+   let result = "";
+   for (let i = 0; i < knowledge_modules.length; i++) { result += "<input name=\"module\" type=\"checkbox\" value=\"" + knowledge_modules[i].name + "\"" + (knowledge_modules[i].active ? " checked" : "") + "/><label>" + knowledge_modules[i].name + "</label>"; }
+   return result;
+}
+
 ///////////
 // Utils //
 ///////////
 
+function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
+function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
+function contains(list, item) { for (let i = 0; i < list.length; i++) { if (equalsCaseSensitive(list[i], item)) { return true; } } return false; }
+
+function containsFromList(txt, list, ignoreCase = false) {
+   for (let i = 0; i < list.length; i++) {
+      if (txt.indexOf(list[i])) { return true; }
+      else if (ignoreCase) { if (txt.toLowerCase().indexOf(list[i].toLowerCase())) { return true; } }
+   }
+   return false;
+}
 
 function equalsCaseSensitive(first, second) {
    switch(first) {
@@ -242,20 +290,15 @@ function equalsCaseSensitive(first, second) {
 }
 
 function concatenate(list, start = 0, end = 0) {
-   if (end === 0) { end = list.length; } else if (list.length) { end = Math.min(end + 1, list.length); } // Make sure it doesn't go out of the arrays bounds
+   if (end === 0) { end = list.length; } else if (list.length) { end = Math.min(end + 1, list.length); } // Makes sure it doesn't go out of the arrays bounds
    let result = "";
    for (let i = start; i < end; i++) { result += (i !== start ? " " : "") + list[i]; }
    return result;
 }
 
-function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
-
-function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }
-
-function containsFromList(txt, list, ignoreCase = false) {
-   for (let i = 0; i < list.length; i++) {
-      if (txt.indexOf(list[i])) { return true; }
-      else if (ignoreCase) { if (txt.toLowerCase().indexOf(list[i].toLowerCase())) { return true; } }
-   }
-   return false;
+function subList(list, start = 0, end = -1) {
+   if (end < 0) { end = list.length; }
+   let result = [];
+   for (let i = start; i < end; i++) { result.push(list[i]); }
+   return result;
 }
