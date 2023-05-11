@@ -28,7 +28,9 @@ const FILTERED = [
 // Memory for running the bot //
 ////////////////////////////////
 
+// Knowledge database
 const fs = require('fs');
+const filetype = ".knowledge";
 
 // Console
 const http = require('http');
@@ -47,6 +49,13 @@ const say = require('say');
 let voicesList = [];
 function getVoices() { return new Promise((resolve) => { say.getInstalledVoices((err, voice) => { if (err) { console.error(err); } return resolve(voice); }) }) }
 async function usingVoices() { voicesList = await getVoices(); console.log(voicesList) }
+
+const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const characters = capitalCharacters.toLowerCase() + " ";
+const normalCharacters = characters + capitalCharacters;
+const specialCharacters = ".,:;[]!?(){}=-+<>*%^&$#@!|`\'\"/\\";
+const numbers = "0123456789";
+const allowedCharacters = capitalCharacters + normalCharacters + specialCharacters + numbers;
 
 // Queue's and busy booleans for all different parts
 let tasksBusy  = { speaking: false, thinking: false, listening: false, console: false };
@@ -133,9 +142,6 @@ function speakQueue() {
 // GPT //
 /////////
 
-const allowedCharacters = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz.,:;[]!?(){}=-+<>*%^&$#@!|`\'\"/\\ 0123456789";
-const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
 function ask(author, prompt, spoken = true) {
    tasksQueue.thinking.push( { author: author, prompt: prompt, spoken: spoken} );
    if (!tasksBusy.thinking) { askQueue().then(() => {}); }
@@ -200,43 +206,69 @@ function cleanResponse(response) {
 // Knowledge database //
 ////////////////////////
 
-// TODO: implement
-// info:
-/* can load modules and keep the names and index pages in memory
- * loads only the needed memory parts of the modules when requested and doesn't keep them in memory
- * needs to be able to get knowledge from parent items, like when thinking of planks it needs to know things about logs and trees and such
- */
+function getInfo(question) {
+   // Check what modules are needed to answer this
+   const keywords = unDupeList(toTextOnly(question).split(" "));
+   let required = [];
+   for (let i = 0; i < keywords.length; i++) {
+      for (let j = 0; j < knowledge_modules.length; j++) {
+         if (knowledge_modules[j].active) {
+            if (hasModuleKnowledge(knowledge_modules[j], keywords[i])) { required.push(keywords); break; }
+         }
+      }
+   }
+
+   // Check which dependencies each module needs
+   let dependencies = [];
+   for (let i = 0; i < required.length; i++) {
+      // TODO
+   }
+
+   // Gather all the info in one place
+   let modules = unDupeList(combineLists(dependencies, required));
+   let result = "";
+   for (let i = 0; i < modules.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(modules[i]); }
+   return result;
+}
+
+function hasModuleKnowledge(module, knowledge) {
+   const directoryEntries = fs.readdirSync("knowledge\/" + module, { withFileTypes: true });
+   for (let i = 0; i < directoryEntries.length; i++) {
+      if (directoryEntries[i].isFile() && directoryEntries[i].name.endsWith(filetype)) {
+         if (equalsCaseSensitive(directoryEntries[i].name.substring(0, directoryEntries[i].name.length - filetype.length), knowledge)) { return true; }
+      }
+   }
+   return false;
+}
+
+function getModuleInfo(knowledge) {
+   let result = "";
+   // TODO
+   return result;
+}
+
+function getModuleKnowledgeDependencies() {
+   let result = [];
+   // TODO
+   return result;
+}
 
 function findModules() {
    let list = [];
-
-   const dirents = fs.readdirSync("knowledge", { withFileTypes: true });
-   for (let i = 0; i < dirents.length; i++) {
-      if (dirents[i].isDirectory()) { addModuleToList(dirents[i].name, list); }
+   const directoryEntries = fs.readdirSync("knowledge", { withFileTypes: true });
+   for (let i = 0; i < directoryEntries.length; i++) {
+      if (directoryEntries[i].isDirectory()) { addModuleToList(directoryEntries[i].name, list); }
    }
-
-   // Overwrite the current list
-   knowledge_modules = list;
-   loadModules();
+   return list;
 }
 
 function addModuleToList(name, list, checked = false) { list.push({ name: name, active: checked ? checked : wasChecked(name) }); }
 
 function wasChecked(name) {
    for (let i = 0; i < knowledge_modules.length; i++) {
-      if (equalsCaseSensitive(knowledge_modules[i].name, name)) {
-         if (knowledge_modules[i].active) { return true; }
-      }
+      if (equalsCaseSensitive(knowledge_modules[i].name, name)) { return knowledge_modules[i].active; }
    }
    return false;
-}
-
-function loadModules() {
-   for (let i = 0; i < knowledge_modules.length; i++) {
-      if (knowledge_modules[i].active) {
-         // TODO
-      }
-   }
 }
 
 ///////////////////
@@ -264,7 +296,7 @@ server.listen(3000, () => { tasksBusy.console = true; });
 async function stopServer() { server.close((err) => { console.error(err); }); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
 
 function generateModulesHTML() {
-   findModules();
+   knowledge_modules = findModules();
    let result = "";
    for (let i = 0; i < knowledge_modules.length; i++) { result += "<input name=\"module\" type=\"checkbox\" value=\"" + knowledge_modules[i].name + "\"" + (knowledge_modules[i].active ? " checked" : "") + "/><label>" + knowledge_modules[i].name + "</label>"; }
    return result;
@@ -305,5 +337,30 @@ function subList(list, start = 0, end = -1) {
    if (end < 0) { end = list.length; }
    let result = [];
    for (let i = start; i < end; i++) { result.push(list[i]); }
+   return result;
+}
+
+function unDupeList(list) {
+   let result = [];
+   for (let i =0; i < list.length; i++) { if (!contains(result, list[i])) { result.push(list[i]); } }
+   return result;
+}
+
+function reverseList(list) {
+   let result = [];
+   for (let i = list.length - 1; i > -1; i--) { result.push(list[i]); }
+   return result;
+}
+
+function combineLists(one, two) {
+   let result = [];
+   for (let i = 0; i < one.length; i++) { result.push(one[i]); }
+   for (let i = 0; i < two.length; i++) { result.push(two[i]); }
+   return result;
+}
+
+function toTextOnly(msg) {
+   let result = "";
+   for (let i = 0; i < msg.length; i++) { if (contains(normalCharacters, msg[i])) { result += msg[i]; } }
    return result;
 }
