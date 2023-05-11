@@ -137,7 +137,7 @@ const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function ask(author, prompt, spoken = true) {
    tasksQueue.thinking.push( { author: author, prompt: prompt, spoken: spoken} );
    if (!tasksBusy.thinking) { askQueue().then(() => {}); }
-   console.log("added question");
+   console.log("Added question");
 }
 
 async function askQueue() {
