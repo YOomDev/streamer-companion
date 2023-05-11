@@ -3,3 +3,5 @@ package-lock.json
 vcs.xml
 .idea/
 knowledge/*
+!knowledge/test
+!knowledge/test/*

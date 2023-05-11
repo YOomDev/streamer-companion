@@ -28,6 +28,8 @@ const FILTERED = [
 // Memory for running the bot //
 ////////////////////////////////
 
+const fs = require('fs');
+
 // Console
 const http = require('http');
 const express = require('express');
@@ -208,11 +210,10 @@ function cleanResponse(response) {
 function findModules() {
    let list = [];
 
-   addModuleToList("test1", list);
-   addModuleToList("test2", list);
-   addModuleToList("test3", list);
-   addModuleToList("test4", list);
-   // TODO
+   const dirents = fs.readdirSync("knowledge", { withFileTypes: true });
+   for (let i = 0; i < dirents.length; i++) {
+      if (dirents[i].isDirectory()) { addModuleToList(dirents[i].name, list); }
+   }
 
    // Overwrite the current list
    knowledge_modules = list;
@@ -231,7 +232,11 @@ function wasChecked(name) {
 }
 
 function loadModules() {
-   // TODO
+   for (let i = 0; i < knowledge_modules.length; i++) {
+      if (knowledge_modules[i].active) {
+         // TODO
+      }
+   }
 }
 
 ///////////////////
