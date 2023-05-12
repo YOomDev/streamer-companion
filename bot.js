@@ -53,7 +53,7 @@ async function usingVoices() { voicesList = await getVoices(); console.log(voice
 const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const characters = capitalCharacters.toLowerCase() + " ";
 const normalCharacters = characters + capitalCharacters;
-const specialCharacters = ".,:;[]!?(){}=-+<>*%^&$#@!|`\'\"/\\";
+const specialCharacters = ".,:;[]!?(){}=-+<>~|*%^&$#@!|`\'\"/\\";
 const numbers = "0123456789";
 const allowedCharacters = capitalCharacters + normalCharacters + specialCharacters + numbers;
 
@@ -61,6 +61,7 @@ const allowedCharacters = capitalCharacters + normalCharacters + specialCharacte
 let tasksBusy  = { speaking: false, thinking: false, listening: false, console: false };
 let tasksQueue = { speaking: []   , thinking: []   , listening: []   , console: []    };
 let program = null;
+let initialized = false;
 
 ////////////////////////
 // Streamer companion //
@@ -75,6 +76,7 @@ async function init() {
    console.log("Voices:");
    await usingVoices();
    console.log("Initialized!");
+   initialized = true;
 }
 
 // Used to check if the AI interface and speaking interface are meant to be kept alive
@@ -82,12 +84,18 @@ function isBusy() { return tasksBusy.speaking || tasksBusy.thinking || tasksBusy
 
 async function start() {
    await init(); // Make sure the modules are initialized correctly
+
    while (isBusy()) { await sleep(1); } // Loop until finished
 
    console.log("AI shutting down...");
+
    // Make sure the modules are closed correctly
    chat.close();
    program = null;
+}
+
+async function awaitInit() {
+   while (!initialized) { await sleep(1) }
 }
 
 async function parseCommand(cmd) {
@@ -103,7 +111,7 @@ async function parseCommand(cmd) {
             break;
          case "modules":
             const tmp = subList(params, 2);
-            findModules();
+            knowledge_modules = findModules();
             for (let i = 0; i < knowledge_modules.length; i++) { knowledge_modules[i].active = contains(tmp, knowledge_modules[i].name); }
             break;
          case "start":
@@ -111,6 +119,9 @@ async function parseCommand(cmd) {
             break;
          case "stop":
             await stopServer();
+            break;
+         case "test":
+            console.log(getInfo("What is a cat?"));
             break;
          default:
             break;
@@ -149,9 +160,15 @@ function ask(author, prompt, spoken = true) {
 }
 
 async function askQueue() {
+   tasksBusy.thinking = true;
+
+   // Make sure the AI is active
+   if (program === null) { program = start(); }
+   if (!initialized) { await awaitInit(); }
+
+   // Process all the queued prompts
    let current = 0;
    while(tasksQueue.thinking.length > 0) {
-      tasksBusy.thinking = true;
       current = getHighestQueueByPriority();
       await chatPrompt(tasksQueue.thinking[current].prompt, tasksQueue.thinking[current].spoken);
       tasksQueue.thinking.splice(current, 1);
@@ -206,7 +223,7 @@ function cleanResponse(response) {
 // Knowledge database //
 ////////////////////////
 
-function getInfo(question) {
+function getInfo(question) { // TODO: remove test logging
    // Check what modules are needed to answer this
    const keywords = unDupeList(toTextOnly(question).split(" "));
    let required = [];
@@ -217,15 +234,21 @@ function getInfo(question) {
          }
       }
    }
+   console.log("TEST1:");
+   console.log(required);
 
    // Check which dependencies each module needs
    let dependencies = [];
    for (let i = 0; i < required.length; i++) {
       // TODO
    }
+   console.log("TEST2:");
+   console.log(dependencies);
 
    // Gather all the info in one place
    let modules = unDupeList(combineLists(dependencies, required));
+   console.log("TEST3:");
+   console.log(modules);
    let result = "";
    for (let i = 0; i < modules.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(modules[i]); }
    return result;
@@ -281,19 +304,21 @@ app.use(express.static(__dirname + '/public'));
 
 // Set command interface through page get
 app.get("/cmd/*", (req, res) => {
-   res.redirect("/"); // redirects back to the home page
-   parseCommand(req.url).catch((err) => { console.error(err); });
+   if (tasksBusy.console) { parseCommand(req.url).catch((err) => { console.error(err); }); }
+   sleep(0.05).then(() => { res.redirect("/"); }); // redirects back to the home page
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => { res.render("index", { modules: generateModulesHTML() }); });
+app.get("/", (req, res) => {
+   res.render("index", { modules: generateModulesHTML(), status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") });
+});
 
 // Start the server
 const server = http.createServer(app);
 server.listen(3000, () => { tasksBusy.console = true; });
 
 // Used to kill the server
-async function stopServer() { server.close((err) => { console.error(err); }); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
+async function stopServer() { server.close((err) => { console.error(err); }); console.log("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
 
 function generateModulesHTML() {
    knowledge_modules = findModules();

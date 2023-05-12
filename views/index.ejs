@@ -16,10 +16,11 @@
             <button onclick="command('ask', 'prompt-input')" type="button">Ask</button><br/>
             <form>
                 <%-modules%>
-                <button onclick="prepareModules(); command('modules', 'modules')" type="button">Test</button>
+                <button onclick="prepareModules(); command('modules', 'modules')" type="button">Load modules</button>
             </form>
             <p id="modules" hidden></p>
-            <button onclick="command('start')" type="button">Start</button>
+            <button onclick="command('test')" type="button">Test</button>
+            <%-status%>
             <button onclick="command('stop')" type="button">Stop</button>
         </div>
 
