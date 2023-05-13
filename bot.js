@@ -48,7 +48,7 @@ const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is '
 const say = require('say');
 let voicesList = [];
 function getVoices() { return new Promise((resolve) => { say.getInstalledVoices((err, voice) => { if (err) { console.error(err); } return resolve(voice); }) }) }
-async function usingVoices() { voicesList = await getVoices(); console.log(voicesList) }
+async function usingVoices() { voicesList = await getVoices(); logInfo(voicesList) }
 
 const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const characters = capitalCharacters.toLowerCase() + " ";
@@ -68,14 +68,14 @@ let initialized = false;
 ////////////////////////
 
 async function init() {
-   console.log("Initializing...");
+   logInfo("Initializing...");
    await sleep(1); // Wait a second to make sure the chatbot is initialized, just in case
    await chat.init(); // Initialize and download missing files
-   console.log("Opening...");
+   logInfo("Opening...");
    await chat.open(); // Open the connection with the model
-   console.log("Voices:");
+   logInfo("Voices:");
    await usingVoices();
-   console.log("Initialized!");
+   logInfo("Initialized!");
    initialized = true;
 }
 
@@ -86,21 +86,18 @@ async function start() {
    await init(); // Make sure the modules are initialized correctly
 
    while (isBusy()) { await sleep(1); } // Loop until finished
-
-   console.log("AI shutting down...");
+   logInfo("AI shutting down...");
 
    // Make sure the modules are closed correctly
    chat.close();
    program = null;
 }
 
-async function awaitInit() {
-   while (!initialized) { await sleep(1) }
-}
+async function awaitInit() { while (!initialized) { await sleep(1) } }
 
 async function parseCommand(cmd) {
    const params = cmd.substring(1,cmd.length).split("\/");
-   console.log(params);
+   logInfo(params);
    if (equalsCaseSensitive(params[0], "cmd")) {
       switch (params[1]) {
          case "ask":
@@ -121,7 +118,7 @@ async function parseCommand(cmd) {
             await stopServer();
             break;
          case "test":
-            console.log(getInfo("What is a cat?"));
+            console.log(getInfo("What is a cat?")); // TODO: remove test logging
             break;
          default:
             break;
@@ -156,7 +153,7 @@ function speakQueue() {
 function ask(author, prompt, spoken = true) {
    tasksQueue.thinking.push( { author: author, prompt: prompt, spoken: spoken} );
    if (!tasksBusy.thinking) { askQueue().then(() => {}); }
-   console.log("Added question");
+   logInfo("Added question");
 }
 
 async function askQueue() {
@@ -177,15 +174,15 @@ async function askQueue() {
 }
 
 async function chatPrompt(prompt, spoken) {
-   console.log(`Prompt: ${prompt}`);
+   logInfo(`Prompt: ${prompt}`);
    console.time('response');
    const response = await chat.prompt(prompt);
    console.timeEnd('response');
-   console.log(response);
+   logInfo(response);
    const result = cleanResponse(response);
-   console.log(result);
+   logInfo(result);
    if (spoken) { speak(filterResponse(result)); }
-   console.log(`Response: ${result}`);
+   logInfo(`Response: ${result}`);
 }
 
 function getHighestQueueByPriority() {
@@ -223,39 +220,49 @@ function cleanResponse(response) {
 // Knowledge database //
 ////////////////////////
 
-function getInfo(question) { // TODO: remove test logging
+function getInfo(question) {
    // Check what modules are needed to answer this
    const keywords = unDupeList(toTextOnly(question).split(" "));
    let required = [];
    for (let i = 0; i < keywords.length; i++) {
       for (let j = 0; j < knowledge_modules.length; j++) {
          if (knowledge_modules[j].active) {
-            if (hasModuleKnowledge(knowledge_modules[j], keywords[i])) { required.push(keywords); break; }
+            if (hasModuleKnowledge(knowledge_modules[j].name, keywords[i])) {
+               required.push({ name: keywords[i], module: knowledge_modules[j].name, requirements: getModuleKnowledgeDependencies(knowledge_modules[j].name, keywords[i]) });
+               break;
+            }
          }
       }
    }
-   console.log("TEST1:");
-   console.log(required);
+   console.log("Required:"); // TODO: remove test logging
+   console.log(required); // TODO: remove test logging
 
-   // Check which dependencies each module needs
+   // Fill in the dependencies with fulfilled requirements
    let dependencies = [];
-   for (let i = 0; i < required.length; i++) {
-      // TODO
+   let lastlength = required.length + 1;
+   while(required.length < lastlength) {
+      lastlength = required.length;
+      for (let i = 0; i < required.length; i++) {
+         if (required[i].requirements.length === 0 || containsAll(dependencies, required[i].requirements)) {
+            dependencies.push({ name: required[i].name, module: required[i].module });
+            required = required.splice(i, 1); // TODO: test
+         }
+      }
    }
-   console.log("TEST2:");
-   console.log(dependencies);
+
+   // Fill with the required list with things it couldn't figure out easily, so it is less likely to error
+   if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push(required[i].name); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(unFilled); }
+   console.log("Dependencies:"); // TODO: remove test logging
+   console.log(dependencies); // TODO: remove test logging
 
    // Gather all the info in one place
-   let modules = unDupeList(combineLists(dependencies, required));
-   console.log("TEST3:");
-   console.log(modules);
    let result = "";
-   for (let i = 0; i < modules.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(modules[i]); }
+   for (let i = 0; i < dependencies.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(dependencies[i].module, dependencies[i].name); }
    return result;
 }
 
 function hasModuleKnowledge(module, knowledge) {
-   const directoryEntries = fs.readdirSync("knowledge\/" + module, { withFileTypes: true });
+   const directoryEntries = fs.readdirSync("knowledge/" + module, { withFileTypes: true });
    for (let i = 0; i < directoryEntries.length; i++) {
       if (directoryEntries[i].isFile() && directoryEntries[i].name.endsWith(filetype)) {
          if (equalsCaseSensitive(directoryEntries[i].name.substring(0, directoryEntries[i].name.length - filetype.length), knowledge)) { return true; }
@@ -264,15 +271,15 @@ function hasModuleKnowledge(module, knowledge) {
    return false;
 }
 
-function getModuleInfo(knowledge) {
+function getModuleInfo(module , knowledge) {
    let result = "";
-   // TODO
+   // TODO: implement
    return result;
 }
 
-function getModuleKnowledgeDependencies() {
+function getModuleKnowledgeDependencies(module, knowledge) {
    let result = [];
-   // TODO
+   // TODO: implement
    return result;
 }
 
@@ -336,6 +343,11 @@ function findCapitalCharacter(str, start) { for (let i = start; i < str.length; 
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
 function contains(list, item) { for (let i = 0; i < list.length; i++) { if (equalsCaseSensitive(list[i], item)) { return true; } } return false; }
 
+function containsAll(list, all) {
+   for (let i = 0; i < all.length; i++) { if (!contains(list, all[i])) { return false; } }
+   return true;
+}
+
 function containsFromList(txt, list, ignoreCase = false) {
    for (let i = 0; i < list.length; i++) {
       if (txt.indexOf(list[i])) { return true; }
@@ -389,3 +401,7 @@ function toTextOnly(msg) {
    for (let i = 0; i < msg.length; i++) { if (contains(normalCharacters, msg[i])) { result += msg[i]; } }
    return result;
 }
+
+function logInfo(msg) { console.log(msg); }
+
+function logError(msg) { console.log("Error: ", msg); }
