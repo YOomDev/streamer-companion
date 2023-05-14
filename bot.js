@@ -214,7 +214,7 @@ function cleanResponse(response) {
 ///////////////////////
 
 // tasksBusy.listening = true;
-// TODO: implement
+// TODO-LATER: implement
 
 ////////////////////////
 // Knowledge database //
@@ -260,9 +260,6 @@ function getInfo(question) {
    // Fill using the required list with things it couldn't figure out easily, so it is less likely to error
    if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push({ name: required[i].name, module: required[i].module }); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(dependencies); }
 
-   console.log("Dependencies:"); // TODO: remove test logging
-   console.log(dependencies); // TODO: remove test logging
-
    // Gather all the info in one place
    let result = "";
    for (let i = 0; i < dependencies.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(dependencies[i].module, dependencies[i].name); }
@@ -280,13 +277,17 @@ function hasModuleKnowledge(module, knowledge) {
 }
 
 function getModuleInfo(module, knowledge) {
-   let result = "";
-   // TODO: implement
-   return result;
+   const lines = readFromFile("knowledge/" + module + "/" + knowledge + filetype);
+   let info = [];
+   for (let i = 0; i < lines.length; i++) {
+      const start = lines[i].split(" ")[0].toLowerCase();
+      if (!equalsCaseSensitive(start, "require")) { info.push(lines[i]); }
+   }
+   return concatenate(info);
 }
 
 function getModuleKnowledgeDependencies(module, knowledge) {
-   const lines = readFromFile("knowledge/" + module + "/" + knowledge + ".knowledge");
+   const lines = readFromFile("knowledge/" + module + "/" + knowledge + filetype);
    let result = [];
    for (let i = 0; i < lines.length; i++) {
       const params = lines[i].split(" ");
@@ -343,7 +344,7 @@ const server = http.createServer(app);
 server.listen(3000, () => { tasksBusy.console = true; });
 
 // Used to kill the server
-async function stopServer() { server.close((err) => { console.error(err); }); console.log("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
+async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
 
 function generateModulesHTML() {
    knowledge_modules = findModules();
@@ -422,7 +423,7 @@ function toTextOnly(msg) {
 
 function logInfo(msg) { console.log(msg); }
 
-function logError(msg) { console.log("Error: ", msg); }
+function logError(msg) { console.error("Error: ", msg); }
 
 function readFromFile(path) {
    try {
