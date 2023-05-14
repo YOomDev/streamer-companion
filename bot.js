@@ -101,7 +101,8 @@ async function parseCommand(cmd) {
    if (equalsCaseSensitive(params[0], "cmd")) {
       switch (params[1]) {
          case "ask":
-            ask(PRIO_DEV, concatenate(params, 2));
+            const prompt = concatenate(params, 2);
+            ask(PRIO_DEV, getInfo(prompt) + " " + prompt);
             break;
          case "say":
             speak(concatenate(params, 2));
@@ -116,9 +117,6 @@ async function parseCommand(cmd) {
             break;
          case "stop":
             await stopServer();
-            break;
-         case "test":
-            console.log(getInfo("What is a cat?")); // TODO: remove test logging
             break;
          default:
             break;
