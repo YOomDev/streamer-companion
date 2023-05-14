@@ -223,7 +223,6 @@ function cleanResponse(response) {
 function getInfo(question) {
    // Check what modules are needed to answer this
    const keywords = unDupeList(toTextOnly(question).split(" "));
-   console.log(keywords);// TODO: remove test logging
    let required = [];
    for (let i = 0; i < keywords.length; i++) {
       for (let j = 0; j < knowledge_modules.length; j++) {
@@ -235,24 +234,32 @@ function getInfo(question) {
          }
       }
    }
-   console.log("Required:"); // TODO: remove test logging
-   console.log(required); // TODO: remove test logging
 
    // Fill in the dependencies with fulfilled requirements
    let dependencies = [];
-   let lastlength = required.length + 1;
-   while(required.length < lastlength) {
+   let lastlength = -1;
+   while(required.length !== lastlength) {
       lastlength = required.length;
       for (let i = 0; i < required.length; i++) {
-         if (required[i].requirements.length === 0 || containsAll(dependencies, required[i].requirements)) {
+         if (required[i].requirements.length === 0 || containsAllDependencies(dependencies, required[i].requirements)) {
             dependencies.push({ name: required[i].name, module: required[i].module });
             required.splice(i, 1);
+            lastlength = required.length + 1;
+         } else {
+            for (let j = 0; j < required[i].requirements.length; j++) {
+               if (containsDependency(dependencies, required[i].requirements[j])) { continue; }
+               if (hasModuleKnowledge(required[i].module, required[i].requirements[j])) {
+                  required.push({ name: required[i].requirements[j], module: required[i].module, requirements: getModuleKnowledgeDependencies(required[i].module, required[i].requirements[j]) });
+                  lastlength = required.length + 1;
+               }
+            }
          }
       }
    }
 
    // Fill using the required list with things it couldn't figure out easily, so it is less likely to error
    if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push({ name: required[i].name, module: required[i].module }); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(dependencies); }
+
    console.log("Dependencies:"); // TODO: remove test logging
    console.log(dependencies); // TODO: remove test logging
 
@@ -279,12 +286,12 @@ function getModuleInfo(module, knowledge) {
 }
 
 function getModuleKnowledgeDependencies(module, knowledge) {
-   let result = [];
-
    const lines = readFromFile("knowledge/" + module + "/" + knowledge + ".knowledge");
-   console.log("Lines:"); // TODO: remove test logging
-   console.log(lines); // TODO: remove test logging
-   // TODO: implement
+   let result = [];
+   for (let i = 0; i < lines.length; i++) {
+      const params = lines[i].split(" ");
+      if (equalsCaseSensitive(params[0].toLowerCase(), "require")) { result.push(concatenate(subList(params, 1))); }
+   }
    return result;
 }
 
@@ -301,6 +308,16 @@ function wasChecked(name) {
    for (let i = 0; i < knowledge_modules.length; i++) {
       if (equalsCaseSensitive(knowledge_modules[i].name, name)) { return knowledge_modules[i].active; }
    }
+   return false;
+}
+
+function containsAllDependencies(dependencies, required) {
+   for (let i =0; i < required.length; i++) { if (!containsDependency(dependencies, required[i])) { return false; } }
+   return true;
+}
+
+function containsDependency(dependencies, dependency) {
+   for (let i = 0; i < dependencies.length; i++) { if (equalsCaseSensitive(dependencies[i].name, dependency)) { return true; } }
    return false;
 }
 
@@ -420,6 +437,6 @@ function readFromFile(path) {
       return lines;
    } catch (err) {
       console.error(err);
-      return [];
+      return [""];
    }
 }
