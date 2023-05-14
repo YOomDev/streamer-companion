@@ -39,7 +39,7 @@ const app = express();
 let knowledge_modules = [];
 
 // GPT4All
-// Note that the gpt4all we are using has problems by default on windows, instructions for fix below:
+// Note that the gpt4all we are sometimes has problems by default on windows, instructions for fix below:
 // line 65: make sure there is a .exe extension like this -> "/.nomic/gpt4all.exe", this is only needed for some Windows users
 const GPT = require('gpt4all').GPT4All;
 const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is 'gpt4all-lora-quantized' model
@@ -102,7 +102,7 @@ async function parseCommand(cmd) {
       switch (params[1]) {
          case "ask":
             const prompt = concatenate(params, 2);
-            ask(PRIO_DEV, getInfo(prompt) + " " + prompt);
+            ask(PRIO_DEV, getInfo(prompt) + " Use the info given in this prompt to answer the following question: " + prompt);
             break;
          case "say":
             speak(concatenate(params, 2));
@@ -176,9 +176,7 @@ async function chatPrompt(prompt, spoken) {
    console.time('response');
    const response = await chat.prompt(prompt);
    console.timeEnd('response');
-   logInfo(response);
    const result = cleanResponse(response);
-   logInfo(result);
    if (spoken) { speak(filterResponse(result)); }
    logInfo(`Response: ${result}`);
 }
