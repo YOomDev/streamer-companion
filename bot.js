@@ -223,6 +223,7 @@ function cleanResponse(response) {
 function getInfo(question) {
    // Check what modules are needed to answer this
    const keywords = unDupeList(toTextOnly(question).split(" "));
+   console.log(keywords);// TODO: remove test logging
    let required = [];
    for (let i = 0; i < keywords.length; i++) {
       for (let j = 0; j < knowledge_modules.length; j++) {
@@ -245,13 +246,13 @@ function getInfo(question) {
       for (let i = 0; i < required.length; i++) {
          if (required[i].requirements.length === 0 || containsAll(dependencies, required[i].requirements)) {
             dependencies.push({ name: required[i].name, module: required[i].module });
-            required = required.splice(i, 1); // TODO: test
+            required.splice(i, 1);
          }
       }
    }
 
-   // Fill with the required list with things it couldn't figure out easily, so it is less likely to error
-   if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push(required[i].name); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(unFilled); }
+   // Fill using the required list with things it couldn't figure out easily, so it is less likely to error
+   if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push({ name: required[i].name, module: required[i].module }); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(dependencies); }
    console.log("Dependencies:"); // TODO: remove test logging
    console.log(dependencies); // TODO: remove test logging
 
@@ -271,7 +272,7 @@ function hasModuleKnowledge(module, knowledge) {
    return false;
 }
 
-function getModuleInfo(module , knowledge) {
+function getModuleInfo(module, knowledge) {
    let result = "";
    // TODO: implement
    return result;
@@ -279,6 +280,10 @@ function getModuleInfo(module , knowledge) {
 
 function getModuleKnowledgeDependencies(module, knowledge) {
    let result = [];
+
+   const lines = readFromFile("knowledge/" + module + "/" + knowledge + ".knowledge");
+   console.log("Lines:"); // TODO: remove test logging
+   console.log(lines); // TODO: remove test logging
    // TODO: implement
    return result;
 }
@@ -286,9 +291,7 @@ function getModuleKnowledgeDependencies(module, knowledge) {
 function findModules() {
    let list = [];
    const directoryEntries = fs.readdirSync("knowledge", { withFileTypes: true });
-   for (let i = 0; i < directoryEntries.length; i++) {
-      if (directoryEntries[i].isDirectory()) { addModuleToList(directoryEntries[i].name, list); }
-   }
+   for (let i = 0; i < directoryEntries.length; i++) { if (directoryEntries[i].isDirectory()) { addModuleToList(directoryEntries[i].name, list); } }
    return list;
 }
 
@@ -316,9 +319,7 @@ app.get("/cmd/*", (req, res) => {
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => {
-   res.render("index", { modules: generateModulesHTML(), status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") });
-});
+app.get("/", (req, res) => { res.render("index", { modules: generateModulesHTML(), status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
 
 // Start the server
 const server = http.createServer(app);
@@ -405,3 +406,20 @@ function toTextOnly(msg) {
 function logInfo(msg) { console.log(msg); }
 
 function logError(msg) { console.log("Error: ", msg); }
+
+function readFromFile(path) {
+   try {
+      const data = fs.readFileSync(path, 'utf8').split("\n");
+      let lines = [];
+      for (let i = 0; i < data.length; i++) {
+         let line = data[i];
+         if (line.endsWith("\r")) { line = line.substring(0, line.length - 1); } // Make sure lines don't end with the first half of the windows end line characters
+         while (line.endsWith(" ")) { line = line.substring(0, line.length - 1); } // Make sure lines don't end with a space character
+         if (line.length) { lines.push(line); }
+      }
+      return lines;
+   } catch (err) {
+      console.error(err);
+      return [];
+   }
+}
