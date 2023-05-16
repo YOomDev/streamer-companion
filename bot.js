@@ -102,7 +102,12 @@ async function parseCommand(cmd) {
       switch (params[1]) {
          case "ask":
             const prompt = concatenate(params, 2);
-            ask(PRIO_DEV, getInfo(prompt) + " Use the info given in this prompt to answer the following question: " + prompt);
+            const info = getInfo(prompt);
+            if (!equalsCaseSensitive(info, NO_INFO)) {
+               ask(PRIO_DEV, info + " Use the info given in this prompt to answer the following question: " + prompt);
+            } else {
+               logError("No info could be given since the AI has no info about this topic!");
+            }
             break;
          case "say":
             speak(concatenate(params, 2));
@@ -395,19 +400,6 @@ function subList(list, start = 0, end = -1) {
 function unDupeList(list) {
    let result = [];
    for (let i =0; i < list.length; i++) { if (!contains(result, list[i])) { result.push(list[i]); } }
-   return result;
-}
-
-function reverseList(list) {
-   let result = [];
-   for (let i = list.length - 1; i > -1; i--) { result.push(list[i]); }
-   return result;
-}
-
-function combineLists(one, two) {
-   let result = [];
-   for (let i = 0; i < one.length; i++) { result.push(one[i]); }
-   for (let i = 0; i < two.length; i++) { result.push(two[i]); }
    return result;
 }
 
