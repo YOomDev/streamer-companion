@@ -8,6 +8,9 @@
 
 const filter = false; // Turns the response speech filter on or off
 
+// Message when no info on a subject can be found
+const NO_INFO = "No info on the subjects could be found...";
+
 // Priority types for usage when you connect it to a chat with viewers or some other chat sort
 const PRIO_DEV = "dev";
 const PRIO_CHAT = "chat";
@@ -104,7 +107,7 @@ async function parseCommand(cmd) {
             const prompt = concatenate(params, 2);
             const info = getInfo(prompt);
             if (!equalsCaseSensitive(info, NO_INFO)) {
-               ask(PRIO_DEV, info + " Use the info given in this prompt to answer the following question: " + prompt);
+               ask(PRIO_DEV, info + " Do not use any known info other than the info given in this prompt. " + prompt);
             } else {
                logError("No info could be given since the AI has no info about this topic!");
             }
@@ -362,11 +365,6 @@ function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
 function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
 function contains(list, item) { for (let i = 0; i < list.length; i++) { if (equalsCaseSensitive(list[i], item)) { return true; } } return false; }
-
-function containsAll(list, all) {
-   for (let i = 0; i < all.length; i++) { if (!contains(list, all[i])) { return false; } }
-   return true;
-}
 
 function containsFromList(txt, list, ignoreCase = false) {
    for (let i = 0; i < list.length; i++) {
