@@ -41,11 +41,15 @@ const express = require('express');
 const app = express();
 let knowledge_modules = [];
 
-// GPT4All
-// Note that the gpt4all we are sometimes has problems by default on windows, instructions for fix below:
-// line 65: make sure there is a .exe extension like this -> "/.nomic/gpt4all.exe", this is only needed for some Windows users
-const GPT = require('gpt4all').GPT4All;
-const chat = new GPT('gpt4all-lora-unfiltered-quantized', true); // Default is 'gpt4all-lora-quantized' model
+// Chat GPT
+const API_KEYS = readFromFile("API_KEYS/settings.txt");
+console.log(API_KEYS);
+const APIChatGPT = require('openai');
+const configuration = new APIChatGPT.Configuration({
+   organization: API_KEYS[1],
+   apiKey: API_KEYS[0],
+});
+const openai = new APIChatGPT.OpenAIApi(configuration);
 
 // Text To Speech
 const say = require('say');
@@ -72,10 +76,11 @@ let initialized = false;
 
 async function init() {
    logInfo("Initializing...");
-   await sleep(1); // Wait a second to make sure the chatbot is initialized, just in case
-   await chat.init(); // Initialize and download missing files
-   logInfo("Opening...");
-   await chat.open(); // Open the connection with the model
+
+   const response = await openai.listEngines();
+   if (response.status !== 200) { logError("Failed to initialize good connection with OpenAI's ChatGPT! exiting!"); parseCommand(['cmd', 'stop']); return; }
+   else { logInfo("Managed to connect to OpenAI's ChatGPT!") }
+
    logInfo("Voices:");
    await usingVoices();
    logInfo("Initialized!");
@@ -89,10 +94,8 @@ async function start() {
    await init(); // Make sure the modules are initialized correctly
 
    while (isBusy()) { await sleep(1); } // Loop until finished
-   logInfo("AI shutting down...");
 
    // Make sure the modules are closed correctly
-   chat.close();
    program = null;
 }
 
@@ -182,8 +185,11 @@ async function askQueue() {
 async function chatPrompt(prompt, spoken) {
    logInfo(`Prompt: ${prompt}`);
    console.time('response');
-   const response = await chat.prompt(prompt);
+   const messages = [{ role: "user", content: prompt }];
+   const completion = await openai.createChatCompletion({  model: "gpt-4", messages: messages });
    console.timeEnd('response');
+   if (completion.status !== 200) { logError(completion.data.error.message); return; }
+   const response = completion.data.choices[0].message.content;
    const result = cleanResponse(response);
    if (spoken) { speak(filterResponse(result)); }
    logInfo(`Response: ${result}`);

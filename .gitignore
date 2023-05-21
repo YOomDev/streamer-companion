@@ -5,4 +5,5 @@ vcs.xml
 knowledge/*
 !knowledge/test
 !knowledge/test/*
-settings.txt
+API_KEYS/*
+!API_KEYS/
