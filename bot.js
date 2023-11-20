@@ -77,7 +77,7 @@ async function init() {
 
     // Load OpenAI ChatGPT connection
     const response = await openai.listEngines();
-    if (response.status !== 200) { logError("Failed to initialize good connection with OpenAI's ChatGPT! exiting!"); parseCommand(['cmd', 'stop']); return; }
+    if (response.status !== 200) { logError("Failed to initialize good connection with OpenAI's ChatGPT! exiting!"); parseCommand(['cmd', 'stop']).then(() => {}); return; }
     else { logInfo("Managed to connect to OpenAI's ChatGPT!") }
 
     logInfo("Initialized!");
@@ -148,7 +148,7 @@ async function askQueue() {
 
     // Make sure the AI is active
     if (programRunner === null) { programRunner = start(); }
-    if (!initialized) { await awaitInit(); }
+    await awaitInit();
 
     // Process all the queued prompts
     let current = 0;
@@ -166,7 +166,7 @@ async function chatPrompt(prompt, source) {
     const messages = [{ role: "user", content: prompt }];
     const completion = await openai.createChatCompletion({  model: "gpt-3.5-turbo-1106", messages: messages }).catch(err => { console.log(err); });
     console.timeEnd('response');
-    if (!completion) { logError(); return; } // Needed after the chat completion bugs out and doesnt return anything
+    if (!completion) { logError(); return; } // Needed after the chat completion bugs out and doesn't return anything
     if (completion.status !== 200) { logError(completion.data.error.message); return; }
     const response = completion.data.choices[0].message.content;
     const result = filterResponse(cleanResponse(response));
