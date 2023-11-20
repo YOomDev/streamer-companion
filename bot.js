@@ -205,14 +205,14 @@ app.get("/cmd/*", (req, res) => {
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => { res.render("index", { status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
+app.get("/", (req, res) => { res.render("index", { status: (programRunner === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
 
 // Start the server
 const server = http.createServer(app);
 server.listen(3000, () => { consoleRunning = true; });
 
 // Used to kill the server
-async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
+async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (programRunner !== null) { consoleRunning = false; await programRunner; } process.exit(); }
 
 ///////////
 // Utils //
