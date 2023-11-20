@@ -6,6 +6,7 @@ require('dotenv').config();
 
 // Configurable settings in memory
 let filter = process.env.DEFAULT_FILTER === "TRUE";
+const commandPrefix = getCommandPrefix();
 
 const FILTERED = [ // A list of all the words that should be filtered if the filter is turned on
     "test",
@@ -95,7 +96,7 @@ async function start() {
 async function awaitInit() { while (!initialized) { await sleep(1) } }
 
 async function parseCommand(cmd) {
-    const params = cmd.substring(1,cmd.length).split("\/");
+    const params = cmd.substring(1, cmd.length).split("\/");
     logInfo(params);
     if (equalsCaseSensitive(params[0], "cmd")) {
         switch (params[1]) {
@@ -115,8 +116,20 @@ async function parseCommand(cmd) {
     }
 }
 
-async function parseDiscord() {
-
+async function parseDiscord(text, channel, message) {
+    if (text.startsWith(commandPrefix)) {
+        const params = text.split(" ");
+        const command = params[0].substring(commandPrefix.length, params[0].length);
+        params.splice(0, 1);
+        switch (command) {
+            case "ask":
+                ask(PRIO_USER, "prompt", { type: SOURCE_DISCORD, channel: channel });
+                break;
+            default:
+                // TODO: reply with unknown command
+                break;
+        }
+    }
 }
 
 async function parseTwitch() {
@@ -129,10 +142,10 @@ function replyToSource(message, source) {
             logInfo(`Response: ${message}`);
             break;
         case SOURCE_DISCORD:
-            // TODO
+            // TODO: reply to source.channel
             break;
         case SOURCE_TWITCH:
-            // TODO
+            // TODO: reply to source.channel
             break;
         default:
             logError("Triggered unknown source type:");
@@ -274,3 +287,27 @@ async function sleep(seconds) { return new Promise((resolve) => setTimeout(resol
 function logInfo(msg) { console.log(msg); }
 
 function logError(msg) { console.error("Error: ", msg); }
+
+function toAllowedText(text) {
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+        for (let j = 0; j < allowedCharacters.length; j++) {
+            if (text[i] === allowedCharacters[j]) { result += text[i]; }
+        }
+    }
+    return result;
+}
+
+function getCommandPrefix() {
+    const fromConfig = process.env.COMMAND_PREFIX;
+    for (let i = 0; i < fromConfig; i++) {
+        if (fromConfig[i] === " ") {
+            logError("Command prefix from .env file contains a space (' '), which this program cannot handle at this current moment, defaulting to '!'");
+            return "!";
+        }
+    }
+    const result = toAllowedText(fromConfig);
+    if (result.length) { return result; }
+    logError("Command prefix did not contain any valid characters, defaulting to '!'");
+    return "!";
+}
