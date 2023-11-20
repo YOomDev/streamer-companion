@@ -6,7 +6,12 @@ require('dotenv').config();
 
 // Configurable settings in memory
 let filter = process.env.DEFAULT_FILTER === "TRUE";
-let game = "";
+
+const FILTERED = [ // A list of all the words that should be filtered if the filter is turned on
+    "test",
+];
+
+let game = ""; // to keep track of which game is selected
 
 /////////////
 // Program //
@@ -40,7 +45,6 @@ let programRunner = null
 let promptRunner = null;
 let consoleRunning = false;
 let promptRunning = false;
-
 
 // Queue's
 let promptQueue = [];
@@ -176,7 +180,6 @@ function filterResponse(response) {
         }
     }
     return response;
-    return (filter && containsFromList(response, FILTERED, true)) ? filteredMessage : response;
 }
 
 // used to make sure the response from the GPT doesn't contain invalid characters
@@ -197,16 +200,16 @@ app.use(express.static(__dirname + '/public'));
 
 // Set command interface through page get
 app.get("/cmd/*", (req, res) => {
-    if (tasksBusy.console) { parseCommand(req.url).catch((err) => { console.error(err); }); }
+    if (consoleRunning) { parseCommand(req.url).catch((err) => { console.error(err); }); }
     sleep(0.05).then(() => { res.redirect("/"); }); // redirects back to the home page
 });
 
 // Set main page get implementation
-app.get("/", (req, res) => { res.render("index", { modules: generateModulesHTML(), status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
+app.get("/", (req, res) => { res.render("index", { status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
 
 // Start the server
 const server = http.createServer(app);
-server.listen(3000, () => { tasksBusy.console = true; });
+server.listen(3000, () => { consoleRunning = true; });
 
 // Used to kill the server
 async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
