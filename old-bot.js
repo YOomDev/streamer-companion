@@ -70,9 +70,6 @@ let tasksQueue = { speaking: []   , thinking: []   , listening: []   , console: 
 let program = null;
 let initialized = false;
 
-let tokens = 4826549;
-let runner = 0;
-
 ////////////////////////
 // Streamer companion //
 ////////////////////////
@@ -132,67 +129,10 @@ async function parseCommand(cmd) {
             case "stop":
                 await stopServer();
                 break;
-            case "test":
-                runner = runTest();
             default:
                 break;
         }
     }
-}
-
-let testPrompt = "In a dystopian future, human civilization has reached a critical juncture. The world is grappling with widespread unrest, scarcity of resources, and rampant disease. Amidst this chaos, you are a brilliant scientist working tirelessly in a state-of-the-art research facility known as Horizon Labs. Your mission is to devise a groundbreaking solution to save humanity from the brink of destruction.\n" +
-    "After years of relentless research and countless trials, you have successfully developed a prototype of the revolutionary \"Panacea Sphere,\" a device capable of eradicating all known infectious diseases and healing any form of ailment. However, the Panacea Sphere is in its preliminary stages, lacking the ability to entirely cure fatal illnesses or injuries. You need to enhance the Panacea Sphere's healing potential by integrating advanced nanotechnology, cutting-edge genetic engineering, and artificial intelligence algorithms.\n" +
-    "But there's a catch.\n" +
-    "The schematics and specifications crucial to the device's completion have been stolen by a nefarious syndicate with a hidden agenda. To complicate matters further, your laboratory is situated in a sprawling underground complex, filled with precarious mazes, security measures, and lethal traps set up by the syndicate to prevent you from pursuing your research.\n" +
-    "Determined to succeed, you assemble a team of trusted colleagues who share your unwavering commitment to humanity's survival. Your team consists of a brilliant hacker, a fearless demolition expert, a resourceful biologist, and a seasoned security specialist. Together, you embark on a perilous journey through the labyrinthine corridors of the complex.\n" +
-    "As you navigate the intricately designed mazes, you encounter a series of challenges specifically engineered to test your skills and resilience. From solving complex riddles to defusing high-tech traps, every step brings you closer to reclaiming the stolen Panacea Sphere schematics and liberating humanity from the clutches of disease.\n" +
-    "Meanwhile, the syndicate's presence in the complex becomes increasingly evident. You uncover their insidious plans, discovering that they aim to monopolize the miraculous healing powers of the PanaceaSphere, exploiting it for their own gain. Their leader, a ruthless mastermind, will stop at nothing to eliminate anyone standing in their way.\n" +
-    "Armed with your scientific expertise, you face not only physical obstacles but also a moral dilemma. The syndicate's actions pose a fundamental question: Should the power to heal all illnesses be held in the hands of a few, or should it be shared for the greater good?\n" +
-    "As you traverse the labyrinth and outsmart the syndicate's machinations, you develop innovative strategies to neutralize their forces and counter their devious tactics. Leverage your team's unique skills, combine their expertise, and uncover hidden alliances within the complex to gain crucial insights and overcome the syndicate's obstacles.\n" +
-    "Finally, after overcoming treacherous challenges and inching closer to your goal, you face the syndicate's leader in a climactic showdown. A battle of wits ensues, as you engage in a fierce intellectual duel, deploying scientific knowledge, strategic thinking, and ethical reasoning to convince the leader to abandon their sinister plans.\n" +
-    "With the stolen schematics safely in your possession, you return triumphantly to Horizon Labs. Utilizing the recovered information, you diligently work to strengthen the Panacea Sphere, making it an infallible weapon against disease and injury. Collaborating with medical experts and government agencies, you devise a comprehensive plan for global dissemination, ensuring that the Panacea Sphere reaches every corner of the world, transcending boundaries and eradicating suffering on an unprecedented scale.\n" +
-    "Through your unwavering determination and remarkable scientific breakthroughs, you pave the way for a brighter future. The Panacea Sphere becomes a symbol of hope, uniting nations in a concerted effort to elevate healthcare, prioritize the well-being of all individuals, and foster global harmony.\n" +
-    "Now, as you stand on the precipice of untold progress, the world looks to you with gratitude and anticipation. The fate of humanity rests in your hands, and only you can unlock the full potential of the Panacea Sphere to heal the world and usher in an era of unprecedented well-being.\n" +
-    "**Instructions:**\n" +
-    "1. Reflect on the challenges and ethical implications presented in the prompt." +
-    "2. Detail the technical processes and advancements required to enhance the Panacea Sphere's healing potential." +
-    "3. Describe the syndicate's labyrinthine complex, including its intricate mazes, security measures, and deadly traps." +
-    "4. Outline the character traits and unique skill sets of your team members.\n" +
-    "5. Narrate the challenges faced by your team, providing specific examples of riddles, traps, and obstacles encountered." +
-    "6. Illustrate the moral dilemma surrounding the control and sharing of the Panacea Sphere's healing powers." +
-    "7. Elaborate on the strategies employed to neutralize the syndicate's forces and subvert their plans." +
-    "8. Depict the intellectual duel between you and the syndicate's leader, emphasizing the scientific, strategic, and ethical arguments presented." +
-    "9. Explain the process of strengthening the Panacea Sphere after reclaiming the stolen schematics." +
-    "10. Describe the global dissemination plan, including collaborations with medical experts and government agencies." +
-    "11. Conclude with a vision of the future, highlighting the transformative impact of the Panacea Sphere on healthcare and world harmony." +
-    "Remember, every decision and detail you provide has significant implications for the fate of humanity's well-being."
-
-async function runTest() {
-    while (tokens > 0) {
-        console.log("tokens left: ", tokens);
-        ask(PRIO_DEV, testPrompt, false);
-        await sleep(21);
-    }
-}
-
-////////////////////
-// Text To Speech //
-////////////////////
-
-function speak(message) {
-    tasksQueue.speaking.push(message);
-    if (!tasksBusy.speaking) { speakQueue(); }
-}
-
-function speakQueue() {
-    tasksBusy.speaking = true;
-    const msg = tasksQueue.speaking[0];
-    tasksQueue.speaking.splice(0,1);
-    say.speak(msg, null, 1.0, (err) => {
-        if (err) { tasksBusy.speaking = false; console.error(err); }
-        if (tasksQueue.speaking.length > 0) { speakQueue(); }
-        else { tasksBusy.speaking = false; }
-    });
 }
 
 /////////
@@ -260,150 +200,6 @@ function cleanResponse(response) {
     return result.substring(findFirstCapitalCharacter(result), result.length);
 }
 
-///////////////////////
-// Voice recognition //
-///////////////////////
-
-// tasksBusy.listening = true;
-// TODO-LATER: implement
-
-////////////////////////
-// Knowledge database //
-////////////////////////
-
-function getInfo(question) {
-    // Check what modules are needed to answer this
-    const keywords = unDupeList(toTextOnly(question).split(" "));
-    let required = [];
-    for (let i = 0; i < keywords.length; i++) {
-        for (let j = 0; j < knowledge_modules.length; j++) {
-            if (knowledge_modules[j].active) {
-                if (hasModuleKnowledge(knowledge_modules[j].name, keywords[i])) {
-                    required.push({ name: keywords[i], module: knowledge_modules[j].name, requirements: getModuleKnowledgeDependencies(knowledge_modules[j].name, keywords[i]) });
-                    break;
-                }
-            }
-        }
-    }
-
-    // Fill in the dependencies with fulfilled requirements
-    let dependencies = [];
-    let lastlength = -1;
-    while(required.length !== lastlength) {
-        lastlength = required.length;
-        for (let i = 0; i < required.length; i++) {
-            if (required[i].requirements.length === 0 || containsAllDependencies(dependencies, required[i].requirements)) {
-                dependencies.push({ name: required[i].name, module: required[i].module });
-                required.splice(i, 1);
-                lastlength = required.length + 1;
-            } else {
-                for (let j = 0; j < required[i].requirements.length; j++) {
-                    if (containsDependency(dependencies, required[i].requirements[j])) { continue; }
-                    if (hasModuleKnowledge(required[i].module, required[i].requirements[j])) {
-                        required.push({ name: required[i].requirements[j], module: required[i].module, requirements: getModuleKnowledgeDependencies(required[i].module, required[i].requirements[j]) });
-                        lastlength = required.length + 1;
-                    }
-                }
-            }
-        }
-    }
-
-    // Fill using the required list with things it couldn't figure out easily, so it is less likely to error
-    if (required.length) { for (let i = 0; i < required.length; i++) { dependencies.push({ name: required[i].name, module: required[i].module }); } logError("Unable to fill all the requirements before adding last few items, they might be interlinked!"); logInfo(dependencies); }
-
-    // Gather all the info in one place
-    let result = "";
-    for (let i = 0; i < dependencies.length; i++) { result += (result.length > 0 ? " " : "") + getModuleInfo(dependencies[i].module, dependencies[i].name); }
-    return result;
-}
-
-function hasModuleKnowledge(module, knowledge) {
-    const directoryEntries = fs.readdirSync("knowledge/" + module, { withFileTypes: true });
-    for (let i = 0; i < directoryEntries.length; i++) {
-        if (directoryEntries[i].isFile() && directoryEntries[i].name.endsWith(filetype)) {
-            if (equalsCaseSensitive(directoryEntries[i].name.substring(0, directoryEntries[i].name.length - filetype.length), knowledge)) { return true; }
-        }
-    }
-    return false;
-}
-
-function getModuleInfo(module, knowledge) {
-    const lines = readFromFile("knowledge/" + module + "/" + knowledge + filetype);
-    let info = [];
-    for (let i = 0; i < lines.length; i++) {
-        const start = lines[i].split(" ")[0].toLowerCase();
-        if (!equalsCaseSensitive(start, "require")) { info.push(lines[i]); }
-    }
-    return concatenate(info);
-}
-
-function getModuleKnowledgeDependencies(module, knowledge) {
-    const lines = readFromFile("knowledge/" + module + "/" + knowledge + filetype);
-    let result = [];
-    for (let i = 0; i < lines.length; i++) {
-        const params = lines[i].split(" ");
-        if (equalsCaseSensitive(params[0].toLowerCase(), "require")) { result.push(concatenate(subList(params, 1))); }
-    }
-    return result;
-}
-
-function findModules() {
-    let list = [];
-    const directoryEntries = fs.readdirSync("knowledge", { withFileTypes: true });
-    for (let i = 0; i < directoryEntries.length; i++) { if (directoryEntries[i].isDirectory()) { addModuleToList(directoryEntries[i].name, list); } }
-    return list;
-}
-
-function addModuleToList(name, list, checked = false) { list.push({ name: name, active: checked ? checked : wasChecked(name) }); }
-
-function wasChecked(name) {
-    for (let i = 0; i < knowledge_modules.length; i++) {
-        if (equalsCaseSensitive(knowledge_modules[i].name, name)) { return knowledge_modules[i].active; }
-    }
-    return false;
-}
-
-function containsAllDependencies(dependencies, required) {
-    for (let i =0; i < required.length; i++) { if (!containsDependency(dependencies, required[i])) { return false; } }
-    return true;
-}
-
-function containsDependency(dependencies, dependency) {
-    for (let i = 0; i < dependencies.length; i++) { if (equalsCaseSensitive(dependencies[i].name, dependency)) { return true; } }
-    return false;
-}
-
-///////////////////
-// Control panel //
-///////////////////
-
-// Setup express for usage
-app.set('view engine', 'ejs');
-app.use(express.static(__dirname + '/public'));
-
-// Set command interface through page get
-app.get("/cmd/*", (req, res) => {
-    if (tasksBusy.console) { parseCommand(req.url).catch((err) => { console.error(err); }); }
-    sleep(0.05).then(() => { res.redirect("/"); }); // redirects back to the home page
-});
-
-// Set main page get implementation
-app.get("/", (req, res) => { res.render("index", { modules: generateModulesHTML(), status: (program === null ? "<button onclick=\"command('start')\" type=\"button\">Start</button>" : "") }); });
-
-// Start the server
-const server = http.createServer(app);
-server.listen(3000, () => { tasksBusy.console = true; });
-
-// Used to kill the server
-async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (program !== null) { tasksBusy.console = false; await program; } process.exit(); }
-
-function generateModulesHTML() {
-    knowledge_modules = findModules();
-    let result = "";
-    for (let i = 0; i < knowledge_modules.length; i++) { result += "<input name=\"module\" type=\"checkbox\" value=\"" + knowledge_modules[i].name + "\"" + (knowledge_modules[i].active ? " checked" : "") + "/><label>" + knowledge_modules[i].name + "</label>"; }
-    return result;
-}
-
 ///////////
 // Utils //
 ///////////
@@ -411,7 +207,6 @@ function generateModulesHTML() {
 function findFirstCapitalCharacter(str) { return findCapitalCharacter(str, 0); }
 function findCapitalCharacter(str, start) { for (let i = start; i < str.length; i++) { if (capitalCharacters.indexOf(str[i]) >= 0) { return i; } } return start; }
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
-function contains(list, item) { for (let i = 0; i < list.length; i++) { if (equalsCaseSensitive(list[i], item)) { return true; } } return false; }
 
 function containsFromList(txt, list, ignoreCase = false) {
     for (let i = 0; i < list.length; i++) {
@@ -428,12 +223,6 @@ function equalsCaseSensitive(first, second) {
     }
 }
 
-function concatenate(list, start = 0, end = 0) {
-    if (end === 0) { end = list.length; } else if (list.length) { end = Math.min(end + 1, list.length); } // Makes sure it doesn't go out of the arrays bounds
-    let result = "";
-    for (let i = start; i < end; i++) { result += (i !== start ? " " : "") + list[i]; }
-    return result;
-}
 
 function subList(list, start = 0, end = -1) {
     if (end < 0) { end = list.length; }
