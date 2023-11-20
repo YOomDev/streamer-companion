@@ -34,9 +34,8 @@ const SOURCE_TWITCH = "twitch";
 
 // Response character filtering
 const capitalCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const characters = capitalCharacters.toLowerCase() + " ";
-const normalCharacters = characters + capitalCharacters;
-const specialCharacters = ".,:;[]!?(){}=-+<>~|*%^&$#@!|`\'\"/\\";
+const normalCharacters = capitalCharacters.toLowerCase() + capitalCharacters;
+const specialCharacters = " .,:;[]!?(){}=-+<>~|*%^&$#@!|`\'\"/\\";
 const numbers = "0123456789";
 const allowedCharacters = capitalCharacters + normalCharacters + specialCharacters + numbers;
 
@@ -89,11 +88,8 @@ function isBusy() { return promptRunner || consoleRunning; }
 
 async function start() {
     await init(); // Make sure the modules are initialized correctly
-
     while (isBusy()) { await sleep(1); } // Loop until finished
-
-    // Make sure the modules are closed correctly
-    programRunner = null;
+    programRunner = null;// Make sure the modules are closed correctly
 }
 
 async function awaitInit() { while (!initialized) { await sleep(1) } }
@@ -105,7 +101,7 @@ async function parseCommand(cmd) {
         switch (params[1]) {
             case "ask":
                 const prompt = concatenate(params, 2);
-                ask(PRIO_DEV, "Do not use any known info other than the info given in this prompt. " + prompt);
+                ask(PRIO_DEV, "Do not use any known info other than the info given in this prompt. " + prompt, { type: SOURCE_CONSOLE });
                 break;
             case "start":
                 if (programRunner === null) { programRunner = start(); }
@@ -119,12 +115,30 @@ async function parseCommand(cmd) {
     }
 }
 
+function replyToSource(message, source) {
+    switch (source.type) {
+        case SOURCE_CONSOLE:
+            logInfo(`Response: ${message}`);
+            break;
+        case SOURCE_DISCORD:
+            // TODO
+            break;
+        case SOURCE_TWITCH:
+            // TODO
+            break;
+        default:
+            logError("Triggered unknown source type:");
+            console.log(source);
+            break;
+    }
+}
+
 /////////
 // GPT //
 /////////
 
-function ask(author, prompt, spoken = true) {
-    promptQueue.push( { author: author, prompt: prompt, spoken: spoken} );
+function ask(author, prompt, source) {
+    promptQueue.push( { author: author, prompt: prompt, source: source} );
     if (!promptRunning) { askQueue().then(() => {}); }
     logInfo("Added question");
 }
@@ -140,22 +154,23 @@ async function askQueue() {
     let current = 0;
     while(promptQueue.length > 0) {
         current = getHighestQueueByPriority();
-        await chatPrompt(promptQueue[current].prompt, promptQueue[current].spoken);
+        await chatPrompt(promptQueue[current].prompt, promptQueue[current].source);
         promptQueue.splice(current, 1);
     }
     promptRunning = false;
 }
 
-async function chatPrompt(prompt, spoken) {
+async function chatPrompt(prompt, source) {
     logInfo(`Prompt: ${prompt}`);
     console.time('response');
     const messages = [{ role: "user", content: prompt }];
-    const completion = await openai.createChatCompletion({  model: "gpt-3.5-turbo-1106", messages: messages }).catch(err => { console.log(err); return});
+    const completion = await openai.createChatCompletion({  model: "gpt-3.5-turbo-1106", messages: messages }).catch(err => { console.log(err); });
     console.timeEnd('response');
+    if (!completion) { logError(); return; } // Needed after the chat completion bugs out and doesnt return anything
     if (completion.status !== 200) { logError(completion.data.error.message); return; }
     const response = completion.data.choices[0].message.content;
     const result = filterResponse(cleanResponse(response));
-    logInfo(`Response: ${result}`);
+    replyToSource(result, source);
 }
 
 function getHighestQueueByPriority() {
@@ -244,12 +259,6 @@ function containsFromList(txt, list, ignoreCase = false) {
         else if (ignoreCase) { if (txt.toLowerCase().indexOf(list[i].toLowerCase())) { return true; } }
     }
     return false;
-}
-
-function toTextOnly(msg) {
-    let result = "";
-    for (let i = 0; i < msg.length; i++) { if (contains(normalCharacters, msg[i])) { result += msg[i]; } }
-    return result;
 }
 
 async function sleep(seconds) { return new Promise((resolve) => setTimeout(resolve, seconds * 1000)); }
