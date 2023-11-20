@@ -215,7 +215,7 @@ app.use(express.static(__dirname + '/public'));
 
 // Set command interface through page get
 app.get("/cmd/*", (req, res) => {
-    if (consoleRunning) { parseCommand(req.url).catch((err) => { console.error(err); }); }
+    if (consoleRunning) { parseCommand(req.url).catch(err => { logError(err); }); }
     sleep(0.05).then(() => { res.redirect("/"); }); // redirects back to the home page
 });
 
