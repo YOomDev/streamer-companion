@@ -115,6 +115,14 @@ async function parseCommand(cmd) {
     }
 }
 
+async function parseDiscord() {
+
+}
+
+async function parseTwitch() {
+
+}
+
 function replyToSource(message, source) {
     switch (source.type) {
         case SOURCE_CONSOLE:
