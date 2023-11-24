@@ -6,13 +6,13 @@ require('dotenv').config();
 
 // Configurable settings in memory
 let filter = process.env.DEFAULT_FILTER === "TRUE";
-const commandPrefix = getCommandPrefix();
+
 
 const FILTERED = [ // A list of all the words that should be filtered if the filter is turned on
     "test",
 ];
 
-let game = ""; // to keep track of which game is selected
+let game = "Warframe"; // to keep track of which game is selected
 
 /////////////
 // Program //
@@ -51,6 +51,7 @@ let promptQueue = [];
 
 // Initialized?
 let initialized = false;
+const commandPrefix = getCommandPrefix();
 
 //////////////////
 // Dependencies //
@@ -95,14 +96,17 @@ async function start() {
 
 async function awaitInit() { while (!initialized) { await sleep(1) } }
 
+function createPrompt(prompt) { return `I have a question about the game ${game}. ${prompt}?`; }
+
 async function parseCommand(cmd) {
     const params = cmd.substring(1, cmd.length).split("\/");
     logInfo(params);
     if (equalsCaseSensitive(params[0], "cmd")) {
         switch (params[1]) {
             case "ask":
+
                 const prompt = concatenate(params, 2);
-                ask(PRIO_DEV, "Do not use any known info other than the info given in this prompt. " + prompt, { type: SOURCE_CONSOLE });
+                ask(PRIO_DEV, createPrompt(prompt), { type: SOURCE_CONSOLE });
                 break;
             case "start":
                 if (programRunner === null) { programRunner = start(); }
@@ -123,7 +127,8 @@ async function parseDiscord(text, channel, message) {
         params.splice(0, 1);
         switch (command) {
             case "ask":
-                ask(PRIO_USER, "prompt", { type: SOURCE_DISCORD, channel: channel });
+                const prompt = concatenate(params, 2);
+                ask(PRIO_USER, createPrompt(prompt), { type: SOURCE_DISCORD, channel: channel });
                 break;
             default:
                 // TODO: reply with unknown command
@@ -245,7 +250,7 @@ app.get("/", (req, res) => { res.render("index", { status: (programRunner === nu
 
 // Start the server
 const server = http.createServer(app);
-server.listen(3000, () => { consoleRunning = true; });
+server.listen(3000, _ => { consoleRunning = true; });
 
 // Used to kill the server
 async function stopServer() { server.close((err) => { logError(err); }); logInfo("Shutting down..."); if (programRunner !== null) { consoleRunning = false; await programRunner; } process.exit(); }
